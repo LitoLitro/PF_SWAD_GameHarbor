@@ -1,0 +1,6 @@
+JUEGO_ID,JUEGO_TITULO,JUEGO_DESCRIPCION,JUEGO_PRECIO,JUEGO_FECHA_LANZAMIENTO,JUEGO_REQUIERE_CLOUD,JUEGO_ESTADO,DESARROLLADOR_ID
+1,Nimbus Runner,Aventura frenética en las nubes.,49.9,2024-03-15,1,DISPONIBLE,1
+2,Skyforge Arena,Combate online en arenas flotantes.,59.9,2023-11-20,1,DISPONIBLE,2
+3,Pixel Horizonte,RPG narrativo con arte pixelado.,39.9,2024-06-10,1,DISPONIBLE,3
+4,Orbital Tactics,Estrategia por turnos espacial.,29.9,2022-08-05,1,DISPONIBLE,4
+5,Indie Nova,Juego indie experimental.,14.9,2025-01-10,0,PROXIMAMENTE,3

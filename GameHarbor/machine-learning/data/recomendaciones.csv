@@ -1,0 +1,10 @@
+USUARIO_ID,USUARIO_NOMBRE,JUEGO_ID,JUEGO_TITULO,RECOMENDACION_PUNTAJE,RECOMENDACION_ORIGEN
+2,Lucia Ramos,2,Skyforge Arena,0.7571,ML
+2,Lucia Ramos,3,Pixel Horizonte,0.4693,ML
+2,Lucia Ramos,4,Orbital Tactics,0.3654,ML
+3,Diego Torres,1,Nimbus Runner,0.9282,ML
+3,Diego Torres,2,Skyforge Arena,0.7133,ML
+3,Diego Torres,4,Orbital Tactics,0.3654,ML
+4,Ana Quispe,3,Pixel Horizonte,0.7865,ML
+4,Ana Quispe,2,Skyforge Arena,0.2259,ML
+4,Ana Quispe,1,Nimbus Runner,0.2257,ML
