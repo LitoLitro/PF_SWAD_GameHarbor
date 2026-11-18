@@ -1,0 +1,4 @@
+ROL_ID,ROL_NOMBRE,ROL_DESCRIPCION
+1,ADMINISTRADOR,Acceso total al sistema
+2,CLIENTE,Usuario comprador y jugador
+3,SOPORTE,Gestión de incidencias y sesiones

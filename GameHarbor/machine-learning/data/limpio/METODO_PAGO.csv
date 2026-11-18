@@ -1,0 +1,6 @@
+METODO_PAGO_ID,METODO_PAGO_NOMBRE,METODO_PAGO_ACTIVO
+1,Tarjeta de crédito,1
+2,Tarjeta de débito,1
+3,Yape,1
+4,Plin,1
+5,PayPal,1
