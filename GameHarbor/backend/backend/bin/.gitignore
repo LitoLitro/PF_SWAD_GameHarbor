@@ -1,0 +1,9 @@
+target/
+.settings/
+.classpath
+.project
+.factorypath
+.springBeans
+.sts4-cache/
+*.log
+application-local.properties
