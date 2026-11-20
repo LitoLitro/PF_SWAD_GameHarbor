@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo - GameHarbor</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+    <header>
+        <a href="../../index.html" class="logo">GAME<span>HARBOR</span></a>
+        <nav>
+            <ul>
+                <li><a href="../../index.html">Tienda</a></li>
+                <li><a href="listado.html" class="active">Catálogo</a></li>
+                <li><a href="../biblioteca/biblioteca.html">Biblioteca</a></li>
+                <li><a href="../carrito/carrito.html">🛒 Carrito</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 class="section-title" style="margin-bottom:0;">Catálogo de Videojuegos</h2>
+            <form action="CatalogoServlet" method="GET" style="display: flex; gap: 10px;">
+                <input type="text" name="busqueda" placeholder="Buscar juego..." style="padding: 8px 12px; background: var(--steam-darker); border: 1px solid #324a66; color: white; border-radius: 4px;">
+                <button type="submit" class="btn-steam">Filtrar</button>
+            </form>
+        </div>
+
+        <div class="games-grid">
+            <div class="game-card" onclick="location.href='detalle.html'">
+                <div class="game-thumb">Cyberpunk Simulation</div>
+                <div class="game-info">
+                    <div class="game-title">Cyberpunk Simulation</div>
+                    <div class="game-price">$ 59.99</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="location.href='detalle.html'">
+                <div class="game-thumb">Cloud Racing 2026</div>
+                <div class="game-info">
+                    <div class="game-title">Cloud Racing 2026</div>
+                    <div class="game-price">$ 39.99</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="location.href='detalle.html'">
+                <div class="game-thumb">Galactic Odyssey</div>
+                <div class="game-info">
+                    <div class="game-title">Galactic Odyssey</div>
+                    <div class="game-price">Gratis (Cloud)</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="location.href='detalle.html'">
+                <div class="game-thumb">Survival Island</div>
+                <div class="game-info">
+                    <div class="game-title">Survival Island</div>
+                    <div class="game-price">$ 19.99</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 GameHarbor. Soluciones Web y Aplicaciones Distribuidas - UPN.</p>
+    </footer>
+    <script src="../../js/main.js"></script>
+</body>
+</html>

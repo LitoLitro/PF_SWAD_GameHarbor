@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameHarbor - Tienda y Cloud Gaming</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="logo">GAME<span>HARBOR</span></a>
+        <nav>
+            <ul>
+                <li><a href="index.html" class="active">Tienda</a></li>
+                <li><a href="./pages/catalogo/listado.html">Catálogo</a></li>
+                <li><a href="./pages/biblioteca/biblioteca.html">Biblioteca</a></li>
+                <li><a href="./pages/cloud/reproductor.html">Cloud Play</a></li>
+                <li><a href="./pages/recomendaciones/recomendados.html">Para Ti (ML)</a></li>
+                <li><a href="./pages/carrito/carrito.html">🛒 Carrito</a></li>
+                <li><a href="./pages/auth/login.html">Iniciar Sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="hero-banner">
+            <h1>Bienvenido a GameHarbor</h1>
+            <p>Compra, guarda y juega directamente en la nube sin instalaciones pesadas ni hardware costoso.</p>
+        </div>
+
+        <h2 class="section-title">Juegos Destacados y Tendencias</h2>
+        <div class="games-grid">
+            <div class="game-card" onclick="location.href='./pages/catalogo/detalle.html'">
+                <div class="game-thumb">Cyberpunk Simulation</div>
+                <div class="game-info">
+                    <div class="game-title">Cyberpunk Simulation</div>
+                    <div class="game-price">$ 59.99</div>
+                </div>
+            </div>
+            <div class="game-card" onclick="location.href='./pages/catalogo/detalle.html'">
+                <div class="game-thumb">Cloud Racing 2026</div>
+                <div class="game-info">
+                    <div class="game-title">Cloud Racing 2026</div>
+                    <div class="game-price">$ 39.99</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 GameHarbor. Soluciones Web y Aplicaciones Distribuidas - UPN.</p>
+    </footer>
+
+    <script src="./js/main.js"></script>
+</body>
+</html>
