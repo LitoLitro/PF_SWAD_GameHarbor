@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Compras - GameHarbor</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+    <header>
+        <a href="../../index.html" class="logo">GAME<span>HARBOR</span></a>
+        <nav>
+            <ul>
+                <li><a href="../../index.html">Tienda</a></li>
+                <li><a href="../catalogo/listado.html">Catálogo</a></li>
+                <li><a href="carrito.html" class="active">🛒 Carrito</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">Tu Carrito de Compras</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Videojuego</th>
+                    <th>Plataforma</th>
+                    <th>Precio</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Cyberpunk Simulation</td>
+                    <td>Cloud / PC</td>
+                    <td>$ 59.99</td>
+                    <td><button class="btn-steam" style="background: #d9534f; padding: 5px 10px; font-size: 12px;">Eliminar</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 20px; background: var(--steam-card); padding: 20px; border-radius: 6px;">
+            <div style="font-size: 18px; color: var(--text-white);">
+                Total: <strong style="color: var(--steam-blue);">$ 59.99</strong>
+            </div>
+            <form action="../orden/historial.html" method="GET">
+                <button type="submit" class="btn-steam btn-green">Simular Checkout (Comprar)</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 GameHarbor. Soluciones Web y Aplicaciones Distribuidas - UPN.</p>
+    </footer>
+    <script src="../../js/main.js"></script>
+</body>
+</html>
