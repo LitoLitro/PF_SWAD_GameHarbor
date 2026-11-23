@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gameharbor.model.entity.*;
 import com.gameharbor.repository.*;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.*;
@@ -38,6 +44,9 @@ class FlujoCompletoTest {
     @Autowired JuegoRepository juegos;
     @Autowired MetodoPagoRepository metodosPago;
     @Autowired ServidorCloudRepository servidores;
+    @Autowired UsuarioRepository usuarios;
+
+    @Value("${app.jwt.secret}") String jwtSecret;
 
     Integer tetrisId;
     Integer metodoPagoId;
@@ -177,5 +186,67 @@ class FlujoCompletoTest {
         mvc.perform(post("/api/juegos/" + tetrisId + "/resenas").header("Authorization", token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"calificacion\":9}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void jwtDeUsuarioActivoSigueAutorizado() throws Exception {
+        String token = registrarYObtenerToken("activo@test.com");
+
+        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void jwtDeUsuarioDesactivadoEsRechazado() throws Exception {
+        String token = registrarYObtenerToken("desactivado@test.com");
+        Usuario usuario = usuarios.findByEmail("desactivado@test.com").orElseThrow();
+        usuario.setEstado("BLOQUEADO");
+        usuarios.save(usuario);
+
+        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void jwtInvalidoYExpiradoSonRechazados() throws Exception {
+        mvc.perform(get("/api/carrito").header("Authorization", "Bearer token-invalido"))
+                .andExpect(status().isUnauthorized());
+
+        Instant ahora = Instant.now();
+        var key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        String usuarioInexistente = Jwts.builder()
+                .subject("inexistente@test.com")
+                .claim("uid", 999999)
+                .claim("roles", java.util.List.of("CLIENTE"))
+                .issuedAt(Date.from(ahora))
+                .expiration(Date.from(ahora.plusSeconds(60)))
+                .signWith(key)
+                .compact();
+
+        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + usuarioInexistente))
+                .andExpect(status().isUnauthorized());
+
+        String expirado = Jwts.builder()
+                .subject("expirado@test.com")
+                .claim("uid", 999999)
+                .claim("roles", java.util.List.of("CLIENTE"))
+                .issuedAt(Date.from(ahora.minusSeconds(120)))
+                .expiration(Date.from(ahora.minusSeconds(60)))
+                .signWith(key)
+                .compact();
+
+        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + expirado))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private String registrarYObtenerToken(String email) throws Exception {
+        String registro = "{\"nombre\":\"Usuario\",\"email\":\"" + email
+                + "\",\"password\":\"Clave12345\"}";
+        MvcResult resultado = mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON).content(registro))
+                .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode respuesta = json.readTree(resultado.getResponse().getContentAsString());
+        return respuesta.get("token").asText();
     }
 }

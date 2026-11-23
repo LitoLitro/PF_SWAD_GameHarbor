@@ -1,6 +1,7 @@
 package com.gameharbor.config;
 
 import com.gameharbor.util.JwtUtil;
+import com.gameharbor.repository.UsuarioRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,9 +20,11 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UsuarioRepository usuarios;
 
-    public JwtAuthFilter(JwtUtil jwtUtil) {
+    public JwtAuthFilter(JwtUtil jwtUtil, UsuarioRepository usuarios) {
         this.jwtUtil = jwtUtil;
+        this.usuarios = usuarios;
     }
 
     @Override
@@ -30,16 +33,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
-            jwtUtil.validar(header.substring(7)).ifPresent(this::autenticar);
+            jwtUtil.validar(header.substring(7)).ifPresent(this::autenticarSiActivo);
         }
         chain.doFilter(request, response);
     }
 
     @SuppressWarnings("unchecked")
-    private void autenticar(Claims claims) {
+    private void autenticarSiActivo(Claims claims) {
         Integer uid = claims.get("uid", Integer.class);
         List<String> roles = claims.get("roles", List.class);
-        if (uid == null) return;
+        if (uid == null || !usuarios.existsByIdAndEstado(uid, "ACTIVO")) return;
 
         var authorities = (roles == null ? List.<String>of() : roles).stream()
                 .map(r -> new SimpleGrantedAuthority("ROLE_" + r))

@@ -1,0 +1,212 @@
+[1mdiff --git a/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/JwtAuthFilter.java b/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/JwtAuthFilter.java[m
+[1mindex 94d9657..5535378 100644[m
+[1m--- a/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/JwtAuthFilter.java[m
+[1m+++ b/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/JwtAuthFilter.java[m
+[36m@@ -1,6 +1,7 @@[m
+ package com.gameharbor.config;[m
+ [m
+ import com.gameharbor.util.JwtUtil;[m
+[32m+[m[32mimport com.gameharbor.repository.UsuarioRepository;[m
+ import io.jsonwebtoken.Claims;[m
+ import jakarta.servlet.FilterChain;[m
+ import jakarta.servlet.ServletException;[m
+[36m@@ -19,9 +20,11 @@[m [mimport java.util.List;[m
+ public class JwtAuthFilter extends OncePerRequestFilter {[m
+ [m
+     private final JwtUtil jwtUtil;[m
+[32m+[m[32m    private final UsuarioRepository usuarios;[m
+ [m
+[31m-    public JwtAuthFilter(JwtUtil jwtUtil) {[m
+[32m+[m[32m    public JwtAuthFilter(JwtUtil jwtUtil, UsuarioRepository usuarios) {[m
+         this.jwtUtil = jwtUtil;[m
+[32m+[m[32m        this.usuarios = usuarios;[m
+     }[m
+ [m
+     @Override[m
+[36m@@ -30,16 +33,16 @@[m [mpublic class JwtAuthFilter extends OncePerRequestFilter {[m
+ [m
+         String header = request.getHeader("Authorization");[m
+         if (header != null && header.startsWith("Bearer ")) {[m
+[31m-            jwtUtil.validar(header.substring(7)).ifPresent(this::autenticar);[m
+[32m+[m[32m            jwtUtil.validar(header.substring(7)).ifPresent(this::autenticarSiActivo);[m
+         }[m
+         chain.doFilter(request, response);[m
+     }[m
+ [m
+     @SuppressWarnings("unchecked")[m
+[31m-    private void autenticar(Claims claims) {[m
+[32m+[m[32m    private void autenticarSiActivo(Claims claims) {[m
+         Integer uid = claims.get("uid", Integer.class);[m
+         List<String> roles = claims.get("roles", List.class);[m
+[31m-        if (uid == null) return;[m
+[32m+[m[32m        if (uid == null || !usuarios.existsByIdAndEstado(uid, "ACTIVO")) return;[m
+ [m
+         var authorities = (roles == null ? List.<String>of() : roles).stream()[m
+                 .map(r -> new SimpleGrantedAuthority("ROLE_" + r))[m
+[1mdiff --git a/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/SecurityConfig.java b/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/SecurityConfig.java[m
+[1mindex 8ce25e8..c95ecf5 100644[m
+[1m--- a/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/SecurityConfig.java[m
+[1m+++ b/GameHarbor/backend/backend/src/main/java/com/gameharbor/config/SecurityConfig.java[m
+[36m@@ -36,7 +36,7 @@[m [mpublic class SecurityConfig {[m
+                         .requestMatchers("/api/auth/**").permitAll()[m
+                         .requestMatchers(HttpMethod.GET, "/api/juegos/**", "/api/categorias", "/api/metodos-pago").permitAll()[m
+                         .requestMatchers("/error").permitAll()[m
+[31m-                        .anyRequest().authenticated())[m
+[32m+[m[32m                        .anyRequest().hasAnyRole("CLIENTE", "ADMINISTRADOR"))[m
+                 .exceptionHandling(e -> e[m
+                         .authenticationEntryPoint((req, res, ex) -> {[m
+                             res.setStatus(401);[m
+[1mdiff --git a/GameHarbor/backend/backend/src/main/java/com/gameharbor/exception/ApiException.java b/GameHarbor/backend/backend/src/main/java/com/gameharbor/exception/ApiException.java[m
+[1mindex c655e1f..33d33f2 100644[m
+[1m--- a/GameHarbor/backend/backend/src/main/java/com/gameharbor/exception/ApiException.java[m
+[1m+++ b/GameHarbor/backend/backend/src/main/java/com/gameharbor/exception/ApiException.java[m
+[36m@@ -1,10 +1,15 @@[m
+[32m+[m
+ package com.gameharbor.exception;[m
+ [m
+ import org.springframework.http.HttpStatus;[m
+ [m
+[31m-/** Error de negocio con el codigo HTTP que debe devolver la API. */[m
+[32m+[m[32m/**[m
+[32m+[m[32m * Error de negocio con el codigo HTTP que debe devolver la API.[m
+[32m+[m[32m */[m
+ public class ApiException extends RuntimeException {[m
+ [m
+[32m+[m[32m    private static final long serialVersionUID = 1L;[m
+[32m+[m
+     private final HttpStatus status;[m
+ [m
+     public ApiException(HttpStatus status, String message) {[m
+[1mdiff --git a/GameHarbor/backend/backend/src/main/java/com/gameharbor/repository/UsuarioRepository.java b/GameHarbor/backend/backend/src/main/java/com/gameharbor/repository/UsuarioRepository.java[m
+[1mindex e728e08..77c8e3c 100644[m
+[1m--- a/GameHarbor/backend/backend/src/main/java/com/gameharbor/repository/UsuarioRepository.java[m
+[1m+++ b/GameHarbor/backend/backend/src/main/java/com/gameharbor/repository/UsuarioRepository.java[m
+[36m@@ -10,4 +10,6 @@[m [mpublic interface UsuarioRepository extends JpaRepository<Usuario, Integer> {[m
+     Optional<Usuario> findByEmail(String email);[m
+ [m
+     boolean existsByEmail(String email);[m
+[32m+[m
+[32m+[m[32m    boolean existsByIdAndEstado(Integer id, String estado);[m
+ }[m
+[1mdiff --git a/GameHarbor/backend/backend/src/main/resources/application.properties b/GameHarbor/backend/backend/src/main/resources/application.properties[m
+[1mindex 59204c6..8971bbc 100644[m
+[1m--- a/GameHarbor/backend/backend/src/main/resources/application.properties[m
+[1m+++ b/GameHarbor/backend/backend/src/main/resources/application.properties[m
+[36m@@ -1,10 +1,11 @@[m
+ spring.application.name=gameharbor-backend[m
+ server.port=8080[m
+[32m+[m[32mspring.profiles.default=local[m
+ [m
+[31m-# ---- SQL Server (local). Ajusta usuario/clave o usa variables de entorno ----[m
+[32m+[m[32m# ---- SQL Server ----[m
+ spring.datasource.url=${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=GameHarbor;encrypt=true;trustServerCertificate=true}[m
+[31m-spring.datasource.username=sa[m
+[31m-spring.datasource.password=12345[m
+[32m+[m[32mspring.datasource.username=${DB_USER:sa}[m
+[32m+[m[32mspring.datasource.password=${DB_PASSWORD:12345}[m
+ spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver[m
+ [m
+ # ---- JPA: el esquema lo manejan los scripts de /database, Hibernate NO lo toca ----[m
+[1mdiff --git a/GameHarbor/backend/backend/src/test/java/com/gameharbor/FlujoCompletoTest.java b/GameHarbor/backend/backend/src/test/java/com/gameharbor/FlujoCompletoTest.java[m
+[1mindex 081efd9..02798d1 100644[m
+[1m--- a/GameHarbor/backend/backend/src/test/java/com/gameharbor/FlujoCompletoTest.java[m
+[1m+++ b/GameHarbor/backend/backend/src/test/java/com/gameharbor/FlujoCompletoTest.java[m
+[36m@@ -4,8 +4,11 @@[m [mimport com.fasterxml.jackson.databind.JsonNode;[m
+ import com.fasterxml.jackson.databind.ObjectMapper;[m
+ import com.gameharbor.model.entity.*;[m
+ import com.gameharbor.repository.*;[m
+[32m+[m[32mimport io.jsonwebtoken.Jwts;[m
+[32m+[m[32mimport io.jsonwebtoken.security.Keys;[m
+ import org.junit.jupiter.api.BeforeEach;[m
+ import org.junit.jupiter.api.Test;[m
+[32m+[m[32mimport org.springframework.beans.factory.annotation.Value;[m
+ import org.springframework.beans.factory.annotation.Autowired;[m
+ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;[m
+ import org.springframework.boot.test.context.SpringBootTest;[m
+[36m@@ -15,6 +18,9 @@[m [mimport org.springframework.test.web.servlet.MockMvc;[m
+ import org.springframework.test.web.servlet.MvcResult;[m
+ [m
+ import java.math.BigDecimal;[m
+[32m+[m[32mimport java.nio.charset.StandardCharsets;[m
+[32m+[m[32mimport java.time.Instant;[m
+[32m+[m[32mimport java.util.Date;[m
+ import java.util.Set;[m
+ [m
+ import static org.hamcrest.Matchers.*;[m
+[36m@@ -38,6 +44,9 @@[m [mclass FlujoCompletoTest {[m
+     @Autowired JuegoRepository juegos;[m
+     @Autowired MetodoPagoRepository metodosPago;[m
+     @Autowired ServidorCloudRepository servidores;[m
+[32m+[m[32m    @Autowired UsuarioRepository usuarios;[m
+[32m+[m
+[32m+[m[32m    @Value("${app.jwt.secret}") String jwtSecret;[m
+ [m
+     Integer tetrisId;[m
+     Integer metodoPagoId;[m
+[36m@@ -178,4 +187,66 @@[m [mclass FlujoCompletoTest {[m
+                         .contentType(MediaType.APPLICATION_JSON).content("{\"calificacion\":9}"))[m
+                 .andExpect(status().isBadRequest());[m
+     }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void jwtDeUsuarioActivoSigueAutorizado() throws Exception {[m
+[32m+[m[32m        String token = registrarYObtenerToken("activo@test.com");[m
+[32m+[m
+[32m+[m[32m        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + token))[m
+[32m+[m[32m                .andExpect(status().isOk());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void jwtDeUsuarioDesactivadoEsRechazado() throws Exception {[m
+[32m+[m[32m        String token = registrarYObtenerToken("desactivado@test.com");[m
+[32m+[m[32m        Usuario usuario = usuarios.findByEmail("desactivado@test.com").orElseThrow();[m
+[32m+[m[32m        usuario.setEstado("BLOQUEADO");[m
+[32m+[m[32m        usuarios.save(usuario);[m
+[32m+[m
+[32m+[m[32m        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + token))[m
+[32m+[m[32m                .andExpect(status().isUnauthorized());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void jwtInvalidoYExpiradoSonRechazados() throws Exception {[m
+[32m+[m[32m        mvc.perform(get("/api/carrito").header("Authorization", "Bearer token-invalido"))[m
+[32m+[m[32m                .andExpect(status().isUnauthorized());[m
+[32m+[m
+[32m+[m[32m        Instant ahora = Instant.now();[m
+[32m+[m[32m        var key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));[m
+[32m+[m[32m        String usuarioInexistente = Jwts.builder()[m
+[32m+[m[32m                .subject("inexistente@test.com")[m
+[32m+[m[32m                .claim("uid", 999999)[m
+[32m+[m[32m                .claim("roles", java.util.List.of("CLIENTE"))[m
+[32m+[m[32m                .issuedAt(Date.from(ahora))[m
+[32m+[m[32m                .expiration(Date.from(ahora.plusSeconds(60)))[m
+[32m+[m[32m                .signWith(key)[m
+[32m+[m[32m                .compact();[m
+[32m+[m
+[32m+[m[32m        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + usuarioInexistente))[m
+[32m+[m[32m                .andExpect(status().isUnauthorized());[m
+[32m+[m
+[32m+[m[32m        String expirado = Jwts.builder()[m
+[32m+[m[32m                .subject("expirado@test.com")[m
+[32m+[m[32m                .claim("uid", 999999)[m
+[32m+[m[32m                .claim("roles", java.util.List.of("CLIENTE"))[m
+[32m+[m[32m                .issuedAt(Date.from(ahora.minusSeconds(120)))[m
+[32m+[m[32m                .expiration(Date.from(ahora.minusSeconds(60)))[m
+[32m+[m[32m                .signWith(key)[m
+[32m+[m[32m                .compact();[m
+[32m+[m
+[32m+[m[32m        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + expirado))[m
+[32m+[m[32m                .andExpect(status().isUnauthorized());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private String registrarYObtenerToken(String email) throws Exception {[m
+[32m+[m[32m        String registro = "{\"nombre\":\"Usuario\",\"email\":\"" + email[m
+[32m+[m[32m                + "\",\"password\":\"Clave12345\"}";[m
+[32m+[m[32m        MvcResult resultado = mvc.perform(post("/api/auth/register")[m
+[32m+[m[32m                        .contentType(MediaType.APPLICATION_JSON).content(registro))[m
+[32m+[m[32m                .andExpect(status().isCreated())[m
+[32m+[m[32m                .andReturn();[m
+[32m+[m[32m        JsonNode respuesta = json.readTree(resultado.getResponse().getContentAsString());[m
+[32m+[m[32m        return respuesta.get("token").asText();[m
+[32m+[m[32m    }[m
+ }[m

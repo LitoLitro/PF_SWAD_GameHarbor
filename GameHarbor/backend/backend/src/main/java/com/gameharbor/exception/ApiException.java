@@ -1,9 +1,14 @@
+
 package com.gameharbor.exception;
 
 import org.springframework.http.HttpStatus;
 
-/** Error de negocio con el codigo HTTP que debe devolver la API. */
+/**
+ * Error de negocio con el codigo HTTP que debe devolver la API.
+ */
 public class ApiException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
 
     private final HttpStatus status;
 

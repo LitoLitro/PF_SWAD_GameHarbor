@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/juegos/**", "/api/categorias", "/api/metodos-pago").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest().hasAnyRole("CLIENTE", "ADMINISTRADOR"))
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> {
                             res.setStatus(401);
