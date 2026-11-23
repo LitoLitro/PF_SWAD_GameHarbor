@@ -5,13 +5,17 @@ import com.gameharbor.model.dto.TiendaDtos.HistorialRequest;
 import com.gameharbor.model.dto.TiendaDtos.RecomendacionDto;
 import com.gameharbor.service.RecomendacionService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@Validated
 @RequestMapping("/api")
 public class RecomendacionController {
 
@@ -23,7 +27,7 @@ public class RecomendacionController {
 
     @GetMapping("/recomendaciones")
     public List<RecomendacionDto> recomendaciones(@AuthenticationPrincipal AuthUser user,
-                                                  @RequestParam(defaultValue = "10") int limite) {
+                                                  @Min(1) @Max(30) @RequestParam(defaultValue = "10") int limite) {
         return recomendaciones.para(user.id(), limite);
     }
 

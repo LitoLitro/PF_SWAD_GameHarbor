@@ -42,7 +42,7 @@ public class OrdenService {
                 .filter(MetodoPago::isActivo)
                 .orElseThrow(() -> ApiException.badRequest("Método de pago inválido o inactivo"));
 
-        Carrito carrito = carritoService.carritoDe(usuarioId);
+        Carrito carrito = carritoService.carritoParaActualizar(usuarioId);
         List<CarritoItem> lineas = items.findByCarritoId(carrito.getId());
         if (lineas.isEmpty()) {
             throw ApiException.badRequest("El carrito está vacío");

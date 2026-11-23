@@ -3,6 +3,7 @@ package com.gameharbor.model.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ public final class CloudDtos {
 
     private CloudDtos() {}
 
-    public record IniciarSesionRequest(@NotNull Integer juegoId) {}
+    public record IniciarSesionRequest(@NotNull @Positive Integer juegoId) {}
 
     /** Metricas opcionales: si no se envian, el backend simula valores plausibles. */
     public record FinalizarSesionRequest(

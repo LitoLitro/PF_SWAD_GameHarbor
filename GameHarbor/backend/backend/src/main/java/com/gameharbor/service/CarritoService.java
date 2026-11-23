@@ -43,10 +43,10 @@ public class CarritoService {
         if (!"DISPONIBLE".equals(juego.getEstado())) {
             throw ApiException.conflict("El juego no está disponible para la venta");
         }
+        Carrito carrito = carritoParaActualizar(usuarioId);
         if (biblioteca.existsByUsuarioIdAndJuegoId(usuarioId, juegoId)) {
             throw ApiException.conflict("Ya tienes este juego en tu biblioteca");
         }
-        Carrito carrito = carritoDe(usuarioId);
         if (items.findByCarritoIdAndJuegoId(carrito.getId(), juegoId).isEmpty()) {
             CarritoItem item = new CarritoItem();
             item.setCarrito(carrito);
@@ -59,7 +59,7 @@ public class CarritoService {
 
     @Transactional
     public CarritoDto quitar(Integer usuarioId, Integer juegoId) {
-        Carrito carrito = carritoDe(usuarioId);
+        Carrito carrito = carritoParaActualizar(usuarioId);
         items.findByCarritoIdAndJuegoId(carrito.getId(), juegoId).ifPresent(items::delete);
         items.flush();
         return armar(carrito);
@@ -67,7 +67,7 @@ public class CarritoService {
 
     @Transactional
     public CarritoDto vaciar(Integer usuarioId) {
-        Carrito carrito = carritoDe(usuarioId);
+        Carrito carrito = carritoParaActualizar(usuarioId);
         items.deleteByCarritoId(carrito.getId());
         return armar(carrito);
     }
@@ -75,6 +75,15 @@ public class CarritoService {
     /** Devuelve el carrito del usuario; lo crea si no existe (p. ej. usuarios cargados por script). */
     Carrito carritoDe(Integer usuarioId) {
         return carritos.findByUsuarioId(usuarioId).orElseGet(() -> {
+            Carrito c = new Carrito();
+            c.setUsuario(usuarios.getReferenceById(usuarioId));
+            return carritos.save(c);
+        });
+    }
+
+    /** Bloquea el carrito durante una operación que modifica sus líneas. */
+    Carrito carritoParaActualizar(Integer usuarioId) {
+        return carritos.findByUsuarioIdForUpdate(usuarioId).orElseGet(() -> {
             Carrito c = new Carrito();
             c.setUsuario(usuarios.getReferenceById(usuarioId));
             return carritos.save(c);

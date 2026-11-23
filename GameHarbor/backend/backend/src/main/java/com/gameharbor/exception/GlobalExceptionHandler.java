@@ -1,5 +1,6 @@
 package com.gameharbor.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -33,6 +35,31 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors()
                 .forEach(e -> campos.putIfAbsent(e.getField(), e.getDefaultMessage()));
         return build(HttpStatus.BAD_REQUEST, "Datos inválidos", campos);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> campos = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(v -> campos.putIfAbsent(
+                v.getPropertyPath().toString(), v.getMessage()));
+        return build(HttpStatus.BAD_REQUEST, "Parametros invalidos", campos);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodValidation(HandlerMethodValidationException ex) {
+        if (ex.isForReturnValue()) {
+            log.error("Fallo la validacion de la respuesta del controlador", ex);
+            return build(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor", null);
+        }
+        Map<String, String> campos = new LinkedHashMap<>();
+        ex.getAllValidationResults().forEach(result -> {
+            String campo = result.getMethodParameter().getParameterName();
+            if (campo == null) campo = "parametro[" + result.getMethodParameter().getParameterIndex() + "]";
+            String nombre = campo;
+            result.getResolvableErrors().forEach(error ->
+                    campos.putIfAbsent(nombre, error.getDefaultMessage()));
+        });
+        return build(HttpStatus.BAD_REQUEST, "Parametros invalidos", campos);
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})

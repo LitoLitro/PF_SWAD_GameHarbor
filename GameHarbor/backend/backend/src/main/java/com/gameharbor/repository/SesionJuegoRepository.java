@@ -16,6 +16,10 @@ public interface SesionJuegoRepository extends JpaRepository<SesionJuego, Intege
 
     Optional<SesionJuego> findByIdAndUsuarioId(Integer id, Integer usuarioId);
 
+    @Query("select s.servidor.id from SesionJuego s where s.id = :sesionId and s.usuario.id = :usuarioId")
+    Optional<Integer> findServidorIdByIdAndUsuarioId(@Param("sesionId") Integer sesionId,
+                                                     @Param("usuarioId") Integer usuarioId);
+
     @Query("""
             select s from SesionJuego s join fetch s.juego join fetch s.servidor
             where s.usuario.id = :usuarioId and s.estado = :estado

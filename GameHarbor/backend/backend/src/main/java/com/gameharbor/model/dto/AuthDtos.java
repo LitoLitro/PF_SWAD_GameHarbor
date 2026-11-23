@@ -17,8 +17,8 @@ public final class AuthDtos {
             @NotBlank @Size(min = 8, max = 72, message = "La contraseña debe tener entre 8 y 72 caracteres") String password) {}
 
     public record LoginRequest(
-            @NotBlank @Email String email,
-            @NotBlank String password) {}
+            @NotBlank @Email @Size(max = 150) String email,
+            @NotBlank @Size(max = 72) String password) {}
 
     public record UsuarioDto(Integer id, String nombre, String email, BigDecimal saldo, List<String> roles) {}
 
