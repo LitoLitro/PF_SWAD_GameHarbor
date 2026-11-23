@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gameharbor.model.entity.*;
 import com.gameharbor.repository.*;
+import com.gameharbor.util.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.AfterEach;
@@ -57,6 +58,7 @@ class FlujoCompletoTest {
     @Autowired UsuarioRepository usuarios;
     @Autowired BibliotecaRepository bibliotecas;
     @Autowired SesionJuegoRepository sesiones;
+    @Autowired JwtUtil jwtUtil;
 
     @Value("${app.jwt.secret}") String jwtSecret;
 
@@ -355,6 +357,101 @@ class FlujoCompletoTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.servidor").value(servidor.getNombre()));
         assertEquals(1, sesiones.countByServidorIdAndEstado(servidor.getId(), "ACTIVA"));
+    }
+
+    @Test
+    void validacionesRechazanIdentificadoresYParametrosFueraDeRango() throws Exception {
+        String token = registrarYObtenerToken("validaciones@test.com");
+
+        mvc.perform(post("/api/carrito/items").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":0}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/carrito/items").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":-1}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/ordenes").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"metodoPagoId\":0}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/ordenes").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"metodoPagoId\":-1}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos/0")).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos/-1")).andExpect(status().isBadRequest());
+
+        mvc.perform(get("/api/juegos").param("q", "x".repeat(151)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos").param("categoriaId", "0"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos").param("categoriaId", "-1"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos").param("pagina", "-1"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos").param("tamano", "51"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/juegos").param("tamano", "50"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/recomendaciones").header("Authorization", "Bearer " + token)
+                        .param("limite", "31"))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"validaciones@test.com\",\"password\":\"" + "x".repeat(73) + "\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/juegos/" + tetrisId + "/resenas").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"calificacion\":5,\"comentario\":\"" + "x".repeat(501) + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void validacionesDeHistorialYMetricasMantienenRangosDefinidos() throws Exception {
+        String token = registrarYObtenerToken("rangos@test.com");
+        mvc.perform(post("/api/historial").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"juegoId\":" + tetrisId + ",\"segundos\":86401,\"origen\":\"CATALOGO\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/historial").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"juegoId\":" + tetrisId + ",\"segundos\":86400,\"origen\":\"CATALOGO\"}"))
+                .andExpect(status().isCreated());
+
+        String cloudToken = registrarYAdquirirJuego("metricas@test.com");
+        MvcResult inicioCloud = mvc.perform(post("/api/cloud/sesiones").header("Authorization", "Bearer " + cloudToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":" + tetrisId + "}"))
+                .andExpect(status().isCreated()).andReturn();
+        int sesionId = json.readTree(inicioCloud.getResponse().getContentAsString()).get("id").asInt();
+        mvc.perform(post("/api/cloud/sesiones/" + sesionId + "/finalizar")
+                        .header("Authorization", "Bearer " + cloudToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bitrateMbps\":-0.1,\"latenciaMs\":-1}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void errores400401Y403UsanLaMismaEstructuraJson() throws Exception {
+        String token = registrarYObtenerToken("errores@test.com");
+
+        mvc.perform(post("/api/carrito/items").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").isNotEmpty())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").isNotEmpty())
+                .andExpect(jsonPath("$.detalle").isNotEmpty());
+
+        mvc.perform(get("/api/carrito"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.timestamp").isNotEmpty())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").isNotEmpty());
+
+        Usuario usuario = usuarios.findByEmail("errores@test.com").orElseThrow();
+        String tokenRolNoPermitido = "Bearer " + jwtUtil.generar(usuario.getId(), usuario.getEmail(), List.of("OTRO"));
+        mvc.perform(get("/api/carrito").header("Authorization", tokenRolNoPermitido))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.timestamp").isNotEmpty())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").isNotEmpty());
     }
 
     private String registrarYObtenerToken(String email) throws Exception {

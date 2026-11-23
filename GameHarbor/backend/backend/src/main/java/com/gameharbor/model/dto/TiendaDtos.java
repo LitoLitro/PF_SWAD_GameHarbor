@@ -3,6 +3,7 @@ package com.gameharbor.model.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -16,14 +17,14 @@ public final class TiendaDtos {
     private TiendaDtos() {}
 
     // ---- Carrito ----
-    public record AgregarCarritoRequest(@NotNull Integer juegoId) {}
+    public record AgregarCarritoRequest(@NotNull @Positive Integer juegoId) {}
 
     public record CarritoItemDto(Integer juegoId, String titulo, String imagenUrl, BigDecimal precio, int cantidad) {}
 
     public record CarritoDto(List<CarritoItemDto> items, BigDecimal total) {}
 
     // ---- Compra ----
-    public record CompraRequest(@NotNull Integer metodoPagoId) {}
+    public record CompraRequest(@NotNull @Positive Integer metodoPagoId) {}
 
     public record OrdenDetalleDto(Integer juegoId, String titulo, BigDecimal precioUnitario, int cantidad) {}
 
@@ -41,8 +42,8 @@ public final class TiendaDtos {
 
     // ---- Historial / recomendaciones ----
     public record HistorialRequest(
-            @NotNull Integer juegoId,
-            @Min(0) int segundos,
+            @NotNull @Positive Integer juegoId,
+            @Min(0) @Max(86400) int segundos,
             @NotNull @Pattern(regexp = "CATALOGO|BUSQUEDA|BIBLIOTECA|RECOMENDACION",
                     message = "origen debe ser CATALOGO, BUSQUEDA, BIBLIOTECA o RECOMENDACION") String origen) {}
 
