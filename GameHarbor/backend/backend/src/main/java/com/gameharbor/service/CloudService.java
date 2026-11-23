@@ -15,8 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -61,9 +61,20 @@ public class CloudService {
             return Mapper.sesion(existente.get());
         }
 
-        ServidorCloud servidor = servidores.findByEstado("ACTIVO").stream()
-                .filter(s -> carga(s) < s.getCapacidad())
-                .min(Comparator.comparingLong(this::carga))
+        // Bloquea los servidores activos por ID para serializar las asignaciones.
+        List<ServidorCloud> servidoresBloqueados = servidores.findByEstadoForUpdate("ACTIVO");
+
+        // Una solicitud anterior pudo abrir la sesión mientras esta esperaba el bloqueo.
+        existente = sesiones.findByUsuarioIdAndJuegoIdAndEstado(usuarioId, juegoId, ACTIVA);
+        if (existente.isPresent()) {
+            return Mapper.sesion(existente.get());
+        }
+
+        ServidorCloud servidor = servidoresBloqueados.stream()
+                .map(s -> Map.entry(s, carga(s)))
+                .filter(e -> e.getValue() < e.getKey().getCapacidad())
+                .min(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
                 .orElseThrow(() -> new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
                         "No hay servidores disponibles en este momento"));
 
@@ -79,8 +90,12 @@ public class CloudService {
     /** Equivale a SP_FINALIZAR_SESION_CLOUD. Si no llegan metricas, se simulan valores plausibles. */
     @Transactional
     public SesionDto finalizar(Integer usuarioId, Integer sesionId, FinalizarSesionRequest req) {
+        Integer servidorId = sesiones.findServidorIdByIdAndUsuarioId(sesionId, usuarioId)
+                .orElseThrow(() -> ApiException.notFound("Sesion no encontrada"));
+        servidores.findByIdForUpdate(servidorId)
+                .orElseThrow(() -> ApiException.notFound("Servidor no encontrado"));
         SesionJuego s = sesiones.findByIdAndUsuarioId(sesionId, usuarioId)
-                .orElseThrow(() -> ApiException.notFound("Sesión no encontrada"));
+                .orElseThrow(() -> ApiException.notFound("Sesion no encontrada"));
         if (!ACTIVA.equals(s.getEstado())) {
             throw ApiException.conflict("La sesión ya fue finalizada");
         }

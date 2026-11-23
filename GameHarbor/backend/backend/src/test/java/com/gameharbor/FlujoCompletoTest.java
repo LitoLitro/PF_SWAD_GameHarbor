@@ -6,6 +6,7 @@ import com.gameharbor.model.entity.*;
 import com.gameharbor.repository.*;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,9 +22,18 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -45,6 +55,8 @@ class FlujoCompletoTest {
     @Autowired MetodoPagoRepository metodosPago;
     @Autowired ServidorCloudRepository servidores;
     @Autowired UsuarioRepository usuarios;
+    @Autowired BibliotecaRepository bibliotecas;
+    @Autowired SesionJuegoRepository sesiones;
 
     @Value("${app.jwt.secret}") String jwtSecret;
 
@@ -86,6 +98,17 @@ class FlujoCompletoTest {
         }
         tetrisId = juegos.findAll().get(0).getId();
         metodoPagoId = metodosPago.findAll().get(0).getId();
+    }
+
+    @AfterEach
+    void restaurarServidorCloudBase() {
+        List<ServidorCloud> existentes = servidores.findAll();
+        for (ServidorCloud servidor : existentes) {
+            boolean base = "CLOUD-LIM-01".equals(servidor.getNombre());
+            servidor.setEstado(base ? "ACTIVO" : "INACTIVO");
+            if (base) servidor.setCapacidad(5);
+        }
+        servidores.saveAll(existentes);
     }
 
     @Test
@@ -239,6 +262,101 @@ class FlujoCompletoTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void checkoutConcurrenteSoloGeneraUnaCompraYConservaLaIntegridad() throws Exception {
+        String token = registrarYObtenerToken("compra-concurrente@test.com");
+        mvc.perform(post("/api/carrito/items").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":" + tetrisId + "}"))
+                .andExpect(status().isOk());
+
+        CountDownLatch listos = new CountDownLatch(2);
+        CountDownLatch inicio = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Callable<Integer> checkout = () -> {
+            listos.countDown();
+            inicio.await();
+            return mvc.perform(post("/api/ordenes").header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"metodoPagoId\":" + metodoPagoId + "}"))
+                    .andReturn().getResponse().getStatus();
+        };
+
+        try {
+            Future<Integer> primera = executor.submit(checkout);
+            Future<Integer> segunda = executor.submit(checkout);
+            listos.await(5, TimeUnit.SECONDS);
+            inicio.countDown();
+
+            int estado1 = primera.get(20, TimeUnit.SECONDS);
+            int estado2 = segunda.get(20, TimeUnit.SECONDS);
+            assertTrue((estado1 == 201 && estado2 == 400) || (estado1 == 400 && estado2 == 201),
+                    "Una compra debe completarse y la segunda encontrar el carrito vacío");
+        } finally {
+            inicio.countDown();
+            executor.shutdownNow();
+        }
+
+        mvc.perform(get("/api/ordenes").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+        mvc.perform(get("/api/biblioteca").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+        mvc.perform(get("/api/carrito").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(0)));
+    }
+
+    @Test
+    void iniciosConcurrentesRespetanLaCapacidadDelServidor() throws Exception {
+        ServidorCloud servidor = prepararServidorUnico(1, "capacidad");
+        String token1 = registrarYAdquirirJuego("cloud-capacidad-1@test.com");
+        String token2 = registrarYAdquirirJuego("cloud-capacidad-2@test.com");
+
+        List<MvcResult> resultados = iniciarCloudSimultaneamente(token1, token2);
+        assertEquals(1, resultados.stream().filter(r -> r.getResponse().getStatus() == 201).count());
+        assertEquals(1, resultados.stream().filter(r -> r.getResponse().getStatus() == 503).count());
+        long activas = sesiones.countByServidorIdAndEstado(servidor.getId(), "ACTIVA");
+        assertTrue(activas <= servidor.getCapacidad(), "El servidor no debe exceder su capacidad");
+    }
+
+    @Test
+    void iniciosConcurrentesDelMismoUsuarioYJuegoDevuelvenUnaSolaSesion() throws Exception {
+        ServidorCloud servidor = prepararServidorUnico(1, "duplicado");
+        String token = registrarYAdquirirJuego("cloud-duplicado@test.com");
+
+        List<MvcResult> resultados = iniciarCloudSimultaneamente(token, token);
+        assertTrue(resultados.stream().allMatch(r -> r.getResponse().getStatus() == 201));
+        int id1 = json.readTree(resultados.get(0).getResponse().getContentAsString()).get("id").asInt();
+        int id2 = json.readTree(resultados.get(1).getResponse().getContentAsString()).get("id").asInt();
+        assertEquals(id1, id2);
+        assertEquals(1, sesiones.countByServidorIdAndEstado(servidor.getId(), "ACTIVA"));
+    }
+
+    @Test
+    void finalizarSesionLiberaCupoParaOtroUsuario() throws Exception {
+        ServidorCloud servidor = prepararServidorUnico(1, "reutilizacion");
+        String token1 = registrarYAdquirirJuego("cloud-finaliza-1@test.com");
+        String token2 = registrarYAdquirirJuego("cloud-finaliza-2@test.com");
+
+        MvcResult primera = mvc.perform(post("/api/cloud/sesiones").header("Authorization", "Bearer " + token1)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":" + tetrisId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        int primeraId = json.readTree(primera.getResponse().getContentAsString()).get("id").asInt();
+
+        mvc.perform(post("/api/cloud/sesiones/" + primeraId + "/finalizar")
+                        .header("Authorization", "Bearer " + token1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("FINALIZADA"));
+
+        mvc.perform(post("/api/cloud/sesiones").header("Authorization", "Bearer " + token2)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":" + tetrisId + "}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.servidor").value(servidor.getNombre()));
+        assertEquals(1, sesiones.countByServidorIdAndEstado(servidor.getId(), "ACTIVA"));
+    }
+
     private String registrarYObtenerToken(String email) throws Exception {
         String registro = "{\"nombre\":\"Usuario\",\"email\":\"" + email
                 + "\",\"password\":\"Clave12345\"}";
@@ -248,5 +366,60 @@ class FlujoCompletoTest {
                 .andReturn();
         JsonNode respuesta = json.readTree(resultado.getResponse().getContentAsString());
         return respuesta.get("token").asText();
+    }
+
+    private ServidorCloud prepararServidorUnico(int capacidad, String sufijo) {
+        List<ServidorCloud> existentes = servidores.findAll();
+        for (ServidorCloud servidor : existentes) {
+            servidor.setEstado("INACTIVO");
+        }
+        servidores.saveAll(existentes);
+
+        String unique = java.util.UUID.randomUUID().toString();
+        ServidorCloud servidor = new ServidorCloud();
+        servidor.setNombre("TEST-CLOUD-" + sufijo + "-" + unique.substring(0, 8));
+        servidor.setUbicacion("Test");
+        servidor.setIp("test-" + unique);
+        servidor.setCapacidad(capacidad);
+        servidor.setEstado("ACTIVO");
+        return servidores.save(servidor);
+    }
+
+    private String registrarYAdquirirJuego(String email) throws Exception {
+        String token = registrarYObtenerToken(email);
+        Usuario usuario = usuarios.findByEmail(email).orElseThrow();
+        Biblioteca item = new Biblioteca();
+        item.setUsuario(usuario);
+        item.setJuego(juegos.getReferenceById(tetrisId));
+        bibliotecas.save(item);
+        return token;
+    }
+
+    private List<MvcResult> iniciarCloudSimultaneamente(String token1, String token2) throws Exception {
+        CountDownLatch listos = new CountDownLatch(2);
+        CountDownLatch inicio = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Callable<MvcResult> request1 = solicitudInicioCloud(token1, listos, inicio);
+        Callable<MvcResult> request2 = solicitudInicioCloud(token2, listos, inicio);
+        try {
+            Future<MvcResult> futura1 = executor.submit(request1);
+            Future<MvcResult> futura2 = executor.submit(request2);
+            assertTrue(listos.await(5, TimeUnit.SECONDS), "Las solicitudes deben quedar listas");
+            inicio.countDown();
+            return List.of(futura1.get(20, TimeUnit.SECONDS), futura2.get(20, TimeUnit.SECONDS));
+        } finally {
+            inicio.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    private Callable<MvcResult> solicitudInicioCloud(String token, CountDownLatch listos, CountDownLatch inicio) {
+        return () -> {
+            listos.countDown();
+            if (!inicio.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Inicio concurrente agotado");
+            return mvc.perform(post("/api/cloud/sesiones").header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"juegoId\":" + tetrisId + "}"))
+                    .andReturn();
+        };
     }
 }
