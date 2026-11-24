@@ -454,6 +454,35 @@ class FlujoCompletoTest {
                 .andExpect(jsonPath("$.error").isNotEmpty());
     }
 
+    @Test
+    void swaggerUiYDocumentoOpenApiSonPublicosYDescribenJwt() throws Exception {
+        mvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+
+        MvcResult resultado = mvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andReturn();
+        JsonNode openApi = json.readTree(resultado.getResponse().getContentAsString());
+        assertEquals("GameHarbor API", openApi.path("info").path("title").asText());
+        assertEquals("http", openApi.path("components").path("securitySchemes")
+                .path("bearerAuth").path("type").asText());
+        assertEquals("bearer", openApi.path("components").path("securitySchemes")
+                .path("bearerAuth").path("scheme").asText());
+        assertEquals("JWT", openApi.path("components").path("securitySchemes")
+                .path("bearerAuth").path("bearerFormat").asText());
+        assertTrue(openApi.path("paths").has("/api/auth/login"));
+        assertTrue(openApi.path("paths").has("/api/cloud/sesiones"));
+        assertTrue(openApi.path("paths").path("/api/carrito").path("get")
+                .path("security").get(0).has("bearerAuth"));
+        assertTrue(openApi.path("paths").path("/api/juegos").path("get")
+                .path("security").isMissingNode());
+
+        mvc.perform(get("/api/juegos")).andExpect(status().isOk());
+        mvc.perform(get("/api/carrito")).andExpect(status().isUnauthorized());
+    }
+
     private String registrarYObtenerToken(String email) throws Exception {
         String registro = "{\"nombre\":\"Usuario\",\"email\":\"" + email
                 + "\",\"password\":\"Clave12345\"}";
