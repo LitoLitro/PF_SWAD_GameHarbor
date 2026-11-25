@@ -1,0 +1,14 @@
+<button class="menu-toggle" type="button" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen" aria-controls="primary-navigation" aria-label="Abrir o cerrar menú">
+  <span></span><span></span><span></span>
+</button>
+<nav id="primary-navigation" class="primary-navigation" [class.is-open]="menuOpen" aria-label="Navegación principal">
+  @for (item of items; track item.path) {
+    <a [routerLink]="item.path" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: item.path === '/' }" (click)="closeMenu()">{{ item.label }}</a>
+  }
+  @if (auth.isAuthenticated()) {
+    <button class="mobile-account mobile-logout" type="button" (click)="logout()">Cerrar sesión</button>
+  } @else {
+    <a class="mobile-account" routerLink="/login" (click)="closeMenu()">Iniciar sesión</a>
+    <a class="mobile-account mobile-register" routerLink="/registro" (click)="closeMenu()">Crear cuenta</a>
+  }
+</nav>

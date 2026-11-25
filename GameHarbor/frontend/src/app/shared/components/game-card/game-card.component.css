@@ -1,0 +1,24 @@
+:host { display: block; min-width: 0; }
+.game-card { overflow: hidden; height: 100%; border: 1px solid #30445a; border-radius: 0.65rem; background: var(--steam-card); transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.game-card:hover { transform: translateY(-4px); border-color: var(--steam-blue); box-shadow: 0 14px 30px rgb(0 0 0 / 24%); }
+.artwork { position: relative; display: flex; min-height: 190px; align-items: flex-end; justify-content: space-between; overflow: hidden; padding: 1rem; color: var(--text-white); text-decoration: none; background-color: #233c53; isolation: isolate; }
+.artwork::before, .artwork::after { position: absolute; z-index: -1; content: ''; }
+.artwork::before { inset: 0; background: radial-gradient(ellipse at 70% 25%, rgb(102 192 244 / 38%), transparent 42%), linear-gradient(145deg, #2a475e, #101923 78%); }
+.artwork--violet::before { background: radial-gradient(ellipse at 72% 30%, rgb(160 132 255 / 44%), transparent 42%), linear-gradient(145deg, #3c3b65, #101923 78%); }
+.artwork--green::before { background: radial-gradient(ellipse at 70% 30%, rgb(16 185 129 / 38%), transparent 42%), linear-gradient(145deg, #27564f, #101923 78%); }
+.artwork::after { top: 14%; right: 14%; width: 9rem; height: 9rem; border: 1px solid rgb(255 255 255 / 14%); border-radius: 50%; box-shadow: 0 0 0 1.3rem rgb(255 255 255 / 4%), 0 0 0 2.6rem rgb(255 255 255 / 3%); }
+.artwork-label { position: absolute; top: 0.75rem; left: 0.75rem; padding: 0.25rem 0.45rem; border-radius: 0.25rem; background: rgb(14 22 31 / 70%); color: #d4e0eb; font-size: 0.65rem; }
+.artwork-mark { font-size: 3.5rem; font-weight: 900; letter-spacing: -0.12em; opacity: 0.72; }
+.cloud-tag { padding: 0.3rem 0.55rem; border: 1px solid rgb(102 192 244 / 55%); border-radius: 99px; background: rgb(17 31 45 / 65%); color: #c5eaff; font-size: 0.68rem; font-weight: 700; }
+.card-content { padding: 1rem; }
+.card-meta, .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; }
+.card-meta { color: var(--text-muted); font-size: 0.75rem; }
+.demo-dot { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: var(--accent-green); }
+h3 { margin: 0.55rem 0 1rem; color: var(--text-white); font-size: 1rem; line-height: 1.35; }
+h3 a { color: inherit; text-decoration: none; }
+h3 a:hover { color: var(--steam-blue); }
+.card-bottom { padding-top: 0.75rem; border-top: 1px solid #34495e; }
+.price { color: var(--text-white); font-weight: 700; }
+.text-link { color: var(--steam-blue); font-size: 0.8rem; font-weight: 700; text-decoration: none; }
+.text-link:hover { color: #b7e4ff; }
+@media (prefers-reduced-motion: reduce) { .game-card { transition: none; } .game-card:hover { transform: none; } }

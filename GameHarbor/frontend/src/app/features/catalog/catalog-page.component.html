@@ -1,0 +1,11 @@
+﻿<section class="catalog-page" aria-labelledby="catalog-title">
+  <div class="catalog-topline"><div><p class="eyebrow">Encuentra tu siguiente aventura</p><h1 id="catalog-title">Catálogo de juegos</h1></div><app-search-bar #searchBar (search)="search($event)" /></div>
+  <div class="catalog-filters"><label for="category-filter">Categoría</label><select id="category-filter" [value]="categoryId() ?? ''" (change)="selectCategory($event)"><option value="">Todas</option>@for (category of categories(); track category.id) { <option [value]="category.id">{{ category.nombre }}</option> }</select><button type="button" class="button button--outline" (click)="resetFilters(searchBar)">Limpiar filtros</button></div>
+  @if(categoryError()){<p class="api-error" role="alert">No se pudieron cargar las categorías: {{categoryError()}}</p>}<app-section-header title="Explora GameHarbor" [description]="total() + ' juegos en el catálogo'" />
+  @if (loading()) { <app-loading label="Cargando catálogo…" /> }
+  @if (error()) { <p class="api-error" role="alert">{{ error() }}</p><button class="button button--outline" (click)="load()">Reintentar</button> }
+  @if (!loading() && !error() && games().length) { <div class="catalog-grid">@for (game of games(); track game.id) { <app-game-card [game]="game" /> }</div><nav class="pagination" aria-label="Paginación"><button class="button button--outline" (click)="page(-1)" [disabled]="pageNumber()===0">Anterior</button><span>Página {{ pageNumber()+1 }} de {{ pageCount() }}</span><button class="button button--outline" (click)="page(1)" [disabled]="pageNumber()+1>=pageCount()">Siguiente</button></nav> }
+  @if (!loading() && !error() && !games().length) { <app-empty-state title="No hay resultados" message="Prueba con otro nombre o categoría." /> }
+</section>
+
+

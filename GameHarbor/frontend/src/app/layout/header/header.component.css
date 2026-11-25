@@ -1,0 +1,12 @@
+.site-header { position: relative; z-index: 10; display: flex; min-height: 5.3rem; align-items: center; justify-content: space-between; gap: 1.1rem; padding: .7rem clamp(1rem, 4vw, 3rem); border-bottom: 1px solid #263648; background: rgb(23 26 33 / 96%); }
+.brand { display: flex; align-items: center; gap: .08rem; color: #fff; font-size: 1.23rem; font-weight: 900; letter-spacing: .025em; text-decoration: none; white-space: nowrap; }
+.brand span { color: var(--steam-blue); }
+.brand small { align-self: end; margin: 0 0 .05rem .45rem; color: #718396; font-size: .48rem; font-weight: 800; letter-spacing: .16em; }
+.account-actions, .session-controls { display: flex; align-items: center; gap: .55rem; }
+.account-link { padding: .65rem .85rem; border: 1px solid #3c5268; border-radius: .45rem; background: transparent; color: #d8e4ed; font-size: .8rem; font-weight: 700; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.account-link--primary { border-color: #4383a4; background: #1f3548; color: #c8ebff; }
+.account-link:hover { border-color: var(--steam-blue); background: #1e3042; }
+.welcome-user { max-width: 10rem; overflow: hidden; color: #c5d1dc; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.logout-link { border-color: #64434a; color: #ffd0d2; }
+@media (max-width: 900px) { .site-header { gap: .75rem; } .account-actions, .session-controls { display: none; } }
+@media (max-width: 440px) { .brand { font-size: 1rem; } .brand small { display: none; } }

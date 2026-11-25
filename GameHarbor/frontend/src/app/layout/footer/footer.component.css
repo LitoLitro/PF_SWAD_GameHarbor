@@ -1,0 +1,7 @@
+.site-footer { margin-top: 4rem; border-top: 1px solid #28394b; background: #15191f; }
+.footer-inner { display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 1rem; width: min(100% - 2rem, 1280px); margin: auto; padding: 1.5rem 0; }
+.footer-brand { color: #fff; font-weight: 900; letter-spacing: .04em; text-decoration: none; }
+.footer-brand span { color: var(--steam-blue); }
+.footer-inner p, .footer-inner small { margin: 0; color: var(--text-muted); font-size: .8rem; }
+.footer-inner small { text-align: right; }
+@media (max-width: 700px) { .footer-inner { grid-template-columns: 1fr; gap: .55rem; } .footer-inner small { text-align: left; } }
