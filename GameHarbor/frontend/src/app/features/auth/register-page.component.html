@@ -1,0 +1,23 @@
+<section class="auth-layout" aria-labelledby="register-title">
+  <div class="auth-aside"><p class="eyebrow">Únete a GameHarbor</p><h1>Un nuevo mundo te espera.</h1><p>Crea tu cuenta para organizar tu colección y encontrar nuevos juegos.</p><span class="aside-orbit" aria-hidden="true">GH</span></div>
+  <div class="auth-card">
+    <div class="form-heading"><p class="eyebrow">Empieza aquí</p><h2 id="register-title">Crear cuenta</h2><p>Completa tus datos para registrarte en GameHarbor.</p></div>
+    @if (errorMessage()) { <p class="form-message form-message--error" role="alert">{{ errorMessage() }}</p> }
+    @if (successMessage()) { <p class="form-message form-message--success" role="status" aria-live="polite">{{ successMessage() }}</p> }
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="register-name">Nombre completo</label>
+      <input id="register-name" type="text" formControlName="nombre" autocomplete="name" placeholder="Tu nombre" required maxlength="80" [attr.aria-invalid]="fieldError('nombre') ? 'true' : null" [attr.aria-describedby]="fieldError('nombre') ? 'register-name-error' : null">
+      @if (fieldError('nombre')) { <span class="field-error" id="register-name-error">{{ fieldError('nombre') }}</span> }
+      <label for="register-email">Correo electrónico</label>
+      <input id="register-email" type="email" formControlName="email" autocomplete="email" placeholder="tu@correo.com" required maxlength="150" [attr.aria-invalid]="fieldError('email') ? 'true' : null" [attr.aria-describedby]="fieldError('email') ? 'register-email-error' : null">
+      @if (fieldError('email')) { <span class="field-error" id="register-email-error">{{ fieldError('email') }}</span> }
+      <label for="register-password">Contraseña</label>
+      <input id="register-password" type="password" formControlName="password" autocomplete="new-password" placeholder="Al menos 8 caracteres" required minlength="8" maxlength="72" [attr.aria-invalid]="fieldError('password') ? 'true' : null" [attr.aria-describedby]="fieldError('password') ? 'register-password-error' : null">
+      @if (fieldError('password')) { <span class="field-error" id="register-password-error">{{ fieldError('password') }}</span> }
+      <p class="field-hint">La contraseña debe tener entre 8 y 72 caracteres.</p>
+      <button class="button" type="submit" [disabled]="loading()">{{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }} <span aria-hidden="true">→</span></button>
+    </form>
+    @if (loading()) { <app-loading label="Creando tu cuenta…" /> }
+    <p class="switch-auth">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
+  </div>
+</section>

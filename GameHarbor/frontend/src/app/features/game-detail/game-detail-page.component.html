@@ -1,0 +1,20 @@
+﻿<section class="detail-page" aria-labelledby="game-title">
+  <a class="back-link" routerLink="/catalogo">← Volver al catálogo</a>
+  @if (loading()) { <app-loading label="Cargando ficha…" /> }
+  @if (error()) { <p class="api-error" role="alert">{{ error() }}</p> }
+  @if (game(); as g) {
+    <div class="detail-grid">
+      <div class="detail-main">
+        <div class="detail-art">@if(g.imagenUrl){<img [src]="g.imagenUrl" [alt]="'Carátula de '+g.titulo">}@else{<span>Imagen no disponible</span><strong>GAMEHARBOR</strong>}</div>
+        <div class="detail-title"><div><p class="eyebrow">{{ g.categorias.join(' · ') }} · {{ g.desarrollador }}</p><h1 id="game-title">{{ g.titulo }}</h1></div><span class="cloud-pill">{{ g.requiereCloud ? 'Cloud disponible' : 'Juego digital' }}</span></div>
+        <section class="description-block"><h2>Acerca de este juego</h2><p>{{ g.descripcion }}</p><p>Lanzamiento: {{ g.fechaLanzamiento }} · Estado: {{ g.estado }}</p><p>Calificación: {{ g.calificacionPromedio ?? 'Sin calificaciones' }} ({{ g.totalResenas }} reseñas)</p></section>
+        <section class="description-block"><h2>Reseñas</h2>@if(reviewError()){<p class="api-error" role="alert">{{ reviewError() }}</p>}@if(!reviews().length){<p>Aún no hay reseñas publicadas.</p>}@for(r of reviews();track r.id){<article class="review"><strong>{{ r.usuario }}</strong><span>{{ r.calificacion }}/5</span><p>{{ r.comentario }}</p><small>{{ r.fecha | date:'medium' }}</small></article>}
+          @if(reviewMessage()){<p class="success-message" role="status">{{reviewMessage()}}</p>}<form class="review-form" (ngSubmit)="submitReview()"><h3>Escribe una reseña</h3><label for="rating">Calificación</label><select id="rating" [value]="rating()" (change)="rating.set(+$any($event.target).value)"><option [value]="5">5</option><option [value]="4">4</option><option [value]="3">3</option><option [value]="2">2</option><option [value]="1">1</option></select><label for="comment">Comentario (máximo 500 caracteres)</label><textarea id="comment" maxlength="500" [value]="comment()" (input)="comment.set($any($event.target).value)"></textarea><button class="button" [disabled]="reviewBusy()">Publicar reseña</button></form>
+        </section>
+      </div>
+      <aside class="purchase-panel"><p class="panel-label">Precio</p><p class="price">S/ {{ g.precio | number:'1.2-2' }}</p><button class="button" (click)="addToCart()" [disabled]="actionBusy()">Añadir al carrito</button>@if(g.requiereCloud){<a class="button button--green" routerLink="/cloud">Ver Cloud Gaming</a>}@if(message()){<p role="status">{{ message() }}</p>}<small>Cloud Gaming administra sesiones simuladas, no transmite video.</small></aside>
+    </div>
+  }
+</section>
+
+

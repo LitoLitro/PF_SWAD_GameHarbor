@@ -1,0 +1,9 @@
+<header class="site-header">
+  <a class="brand" routerLink="/" aria-label="GameHarbor, inicio">GAME<span>HARBOR</span><small>PLAY BEYOND</small></a>
+  <app-navbar />
+  @if (auth.isAuthenticated()) {
+    <div class="session-controls"><span class="welcome-user">Hola, {{ auth.currentUser()?.nombre }}</span><button class="account-link logout-link" type="button" (click)="logout()">Cerrar sesión</button></div>
+  } @else {
+    <div class="account-actions"><a class="account-link" routerLink="/login">Iniciar sesión</a><a class="account-link account-link--primary" routerLink="/registro">Crear cuenta</a></div>
+  }
+</header>

@@ -1,0 +1,35 @@
+﻿<section class="feature-page">
+ <p class="eyebrow">{{title()}}</p><div class="feature-heading"><div><h1>{{heading()}}</h1><p>{{description()}}</p></div></div>
+ @if(loading()){<app-loading label="Cargando…"/>}
+ @if(error()){<p class="api-error" role="alert">{{error()}}</p><button class="button button--outline" (click)="load()">Reintentar</button>}
+ @if(message()){<p class="success-message" role="status">{{message()}}</p>}
+ @if(section()==='carrito'){
+  @if(!loading() && cart(); as c){
+   @if(c.items.length){<div class="cart-list">@for(item of c.items;track item.juegoId){<article class="cart-row"><a [routerLink]="['/catalogo',item.juegoId]">{{item.titulo}}</a><span>Cantidad: {{item.cantidad}}</span><strong>S/ {{item.precio | number:'1.2-2'}}</strong><button class="button button--outline" (click)="remove(item.juegoId)">Quitar</button></article>}</div><p class="cart-total">Total: <strong>S/ {{c.total | number:'1.2-2'}}</strong></p><a class="button button--outline" routerLink="/catalogo">Seguir explorando</a><a class="button" routerLink="/checkout">Continuar compra</a><button class="button button--outline" (click)="clearCart()">Vaciar carrito</button>}
+   @else{<app-empty-state title="Tu carrito está vacío" message="Agrega juegos del catálogo para verlos aquí."/><a class="button" routerLink="/catalogo">Explorar catálogo</a>}
+  }
+ }
+ @if(section()==='checkout'){
+  @if(cart()?.items?.length){<h2>Compra simulada por el backend</h2><p>No se solicitarán datos bancarios. Al confirmar, el backend crea una orden PAGADA, actualiza tu biblioteca y vacía el carrito.</p><label for="payment-method">Método de pago</label><select id="payment-method" [value]="paymentId()" (change)="paymentId.set(+$any($event.target).value)"><option value="0">Selecciona un método</option>@for(m of methods();track m.id){<option [value]="m.id">{{m.nombre}}</option>}</select><p>Total: S/ {{cart()!.total | number:'1.2-2'}}</p><button class="button" (click)="buy()" [disabled]="busy() || !paymentId()">Confirmar compra simulada</button><a class="button button--outline" routerLink="/ordenes">Ver historial de órdenes</a>}
+  @else if(!loading() && !error()){<app-empty-state title="No hay artículos para comprar" message="Añade un juego al carrito antes de continuar."/><a class="button" routerLink="/catalogo">Ir al catálogo</a>}
+ }
+ @if(section()==='ordenes'){
+  @if(!loading() && orders().length){@for(o of orders();track o.id){<article class="data-card"><header><h2>Orden #{{o.id}}</h2><span>{{o.estado}}</span></header><p>{{o.fecha | date:'medium'}} · {{o.metodoPago}}</p><ul>@for(d of o.detalles;track d.juegoId){<li>{{d.titulo}} · {{d.cantidad}} × S/ {{d.precioUnitario | number:'1.2-2'}}</li>}</ul><strong>Total S/ {{o.total | number:'1.2-2'}}</strong></article>}}@else if(!loading() && !error()){<app-empty-state title="Sin órdenes" message="Tus órdenes aparecerán después de una compra simulada."/>}
+ }
+ @if(section()==='biblioteca'){
+  @if(!loading() && library().length){<div class="catalog-grid">@for(item of library();track item.juegoId){<article class="data-card"><h2><a [routerLink]="['/catalogo',item.juegoId]">{{item.titulo}}</a></h2><p>Adquirido: {{item.fechaAdquisicion | date:'mediumDate'}}</p>@if(item.requiereCloud){<button class="button button--green" (click)="startCloud(item.juegoId)">Iniciar sesión Cloud</button>}</article>}</div>}
+  @else if(!loading() && !error()){<app-empty-state title="Tu biblioteca está vacía" message="Los juegos que adquieras aparecerán aquí."/><a class="button" routerLink="/catalogo">Explorar catálogo</a>}
+ }
+ @if(section()==='cloud'){
+  <aside class="demo-notice">Cloud Gaming administra sesiones de juego simuladas. No existe transmisión de video.</aside>
+  @if(!loading() && sessions().length){@for(s of sessions();track s.id){<article class="data-card"><h2>{{s.juegoTitulo}}</h2><p>Estado: {{s.estado}} · Servidor: {{s.servidor}} ({{s.ubicacion}})</p><p>Inicio: {{s.fechaInicio | date:'medium'}}</p><button class="button" (click)="finishCloud(s.id)" [disabled]="busy()">Finalizar sesión</button></article>}}
+  @else if(!loading() && !error()){<app-empty-state title="No tienes sesiones activas" message="Inicia Cloud desde un juego que ya esté en tu biblioteca."/><a class="button" routerLink="/biblioteca">Ver biblioteca</a>}
+ }
+ @if(section()==='recomendaciones'){
+  <label for="limit">Resultados</label><select id="limit" [value]="limit()" (change)="limit.set(+$any($event.target).value);load()"><option [value]="5">5</option><option [value]="10">10</option><option [value]="20">20</option><option [value]="30">30</option></select>
+  @if(!loading() && recs().length){<div class="catalog-grid">@for(r of recs();track r.juego.id){<div><app-game-card [game]="r.juego"/><p class="rec-meta">Puntaje {{r.puntaje}} · Origen: {{r.origen}}</p></div>}</div>}
+  @else if(!loading() && !error()){<app-empty-state title="Sin recomendaciones guardadas" message="El backend aún no tiene recomendaciones almacenadas para esta cuenta; no se generan sugerencias de muestra."/>}
+ }
+</section>
+
+

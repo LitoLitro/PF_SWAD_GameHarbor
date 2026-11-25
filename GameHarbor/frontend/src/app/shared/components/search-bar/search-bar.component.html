@@ -1,0 +1,6 @@
+<form class="search-form" (ngSubmit)="submit()" role="search">
+  <label class="visually-hidden" for="game-search">Buscar juegos</label>
+  <span class="search-icon" aria-hidden="true">⌕</span>
+  <input id="game-search" name="query" type="search" [(ngModel)]="query" placeholder="Buscar juegos..." autocomplete="off">
+  <button class="button button--small" type="submit">Buscar</button>
+</form>

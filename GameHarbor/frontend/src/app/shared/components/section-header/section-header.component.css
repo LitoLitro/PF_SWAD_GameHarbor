@@ -1,0 +1,5 @@
+.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1.25rem; margin-bottom: 1.25rem; }
+.eyebrow { margin: 0 0 0.4rem; color: var(--steam-blue); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+h2 { margin: 0; color: var(--text-white); font-size: clamp(1.35rem, 3vw, 1.8rem); }
+.description { max-width: 34rem; margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.55; }
+@media (max-width: 650px) { .section-heading { align-items: start; flex-direction: column; } }

@@ -1,0 +1,12 @@
+﻿<article class="game-card">
+  <a class="artwork" [routerLink]="['/catalogo', game().id]" [attr.aria-label]="'Ver detalle de ' + game().titulo">
+    @if (game().imagenUrl) { <img [src]="game().imagenUrl" [alt]="'Carátula de ' + game().titulo" loading="lazy"> }
+    @else { <span class="artwork-label">Imagen no disponible</span><span class="artwork-mark" aria-hidden="true">GH</span> }
+    @if (game().requiereCloud) { <span class="cloud-tag">Cloud ready</span> }
+  </a>
+  <div class="card-content">
+    <div class="card-meta"><span>{{ game().categorias.join(' · ') || game().desarrollador }}</span></div>
+    <h3><a [routerLink]="['/catalogo', game().id]">{{ game().titulo }}</a></h3>
+    <div class="card-bottom"><span class="price">S/ {{ game().precio | number:'1.2-2' }}</span><a class="text-link" [routerLink]="['/catalogo', game().id]">Detalles <span aria-hidden="true">→</span></a></div>
+  </div>
+</article>
